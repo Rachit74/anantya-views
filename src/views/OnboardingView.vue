@@ -1,5 +1,8 @@
 <script setup>
-import { reactive } from 'vue'
+import axios from 'axios'
+import { reactive, ref } from 'vue'
+
+const BASE_URL = 'http://localhost:8000'
 
 const form = reactive({
   email: '',
@@ -12,10 +15,30 @@ const form = reactive({
   place_of_profession: '',
   department: '',
   volunteered_before: '',
+  acknowledgement: false,
 })
 
-const handleSubmit = () => {
-  console.log('Onboarding form submitted:', { ...form })
+const isSubmitting = ref(false)
+const submitMessage = ref('')
+
+const handleSubmit = async () => {
+  isSubmitting.value = true
+  submitMessage.value = ''
+
+  try {
+    const response = await axios.post(`${BASE_URL}/onboard`, {
+      ...form,
+      age: Number(form.age),
+      phone_number: Number(form.phone_number),
+    })
+
+    submitMessage.value = 'Form submitted successfully.'
+    console.log(response.data)
+  } catch (error) {
+    submitMessage.value = `Submission failed: ${error?.response?.data?.detail || error.message}`
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
@@ -74,7 +97,16 @@ const handleSubmit = () => {
           <input v-model="form.volunteered_before" type="text" required />
         </label>
 
-        <button type="submit">Submit</button>
+        <label class="checkbox-row">
+          <input v-model="form.acknowledgement" type="checkbox" required />
+          I acknowledge the information provided is correct.
+        </label>
+
+        <button type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+        </button>
+
+        <p v-if="submitMessage" class="submit-message">{{ submitMessage }}</p>
       </form>
     </section>
   </main>
@@ -119,6 +151,17 @@ input {
   padding: 0 12px;
 }
 
+.checkbox-row {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-row input {
+  height: auto;
+  padding: 0;
+}
+
 button {
   margin-top: 8px;
   height: 40px;
@@ -128,5 +171,15 @@ button {
   color: #ffffff;
   font-weight: 600;
   cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.submit-message {
+  margin: 0;
+  font-size: 14px;
 }
 </style>
