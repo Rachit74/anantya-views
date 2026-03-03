@@ -4,6 +4,9 @@ import { reactive, ref } from 'vue'
 
 const BASE_URL = 'http://localhost:8000'
 
+const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+
 const form = reactive({
   email: '',
   fullname: '',
@@ -23,6 +26,10 @@ const form = reactive({
 
 const govIdFile = ref(null)
 const memberPicFile = ref(null)
+const govIdUploading = ref(false)
+const memberPicUploading = ref(false)
+const govIdDone = ref(false)
+const memberPicDone = ref(false)
 
 const departmentOptions = [
   'Education & Literacy',
@@ -45,13 +52,58 @@ const toggleDepartment = (dept) => {
   else form.department.splice(idx, 1)
 }
 
+const uploadToCloudinary = async (file, formField, uploading, done) => {
+  uploading.value = true
+  done.value = false
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
+
+    const { data } = await axios.post(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
+      formData
+    )
+
+    // data.secure_url is the permanent HTTPS URL — stored in form, sent to FastAPI
+    form[formField] = data.secure_url
+    done.value = true
+  } catch (err) {
+    alert(`Upload failed: ${err.message}`)
+  } finally {
+    uploading.value = false
+  }
+}
+
+const handleGovIdChange = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  govIdFile.value = file
+  uploadToCloudinary(file, 'government_id_picture', govIdUploading, govIdDone)
+}
+
+const handleMemberPicChange = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  memberPicFile.value = file
+  uploadToCloudinary(file, 'member_picture', memberPicUploading, memberPicDone)
+}
+
 const handleSubmit = async () => {
+  if (!govIdDone.value || !memberPicDone.value) {
+    submitMessage.value = 'Please wait for file uploads to finish.'
+    return
+  }
+
   isSubmitting.value = true
   submitMessage.value = ''
   submitSuccess.value = false
 
   try {
-    const response = await axios.post(`${BASE_URL}/onboard`, {
+    // At this point form.government_id_picture and form.member_picture
+    // are already Cloudinary HTTPS URLs — FastAPI receives them as HttpUrl strings
+    await axios.post(`${BASE_URL}/onboard`, {
       ...form,
       age: Number(form.age),
     })
@@ -175,30 +227,48 @@ const handleSubmit = async () => {
 
         <div class="section">
           <h2>Documents</h2>
-          <p class="hint">Files will be securely uploaded to our storage.</p>
+          <p class="hint">Files are uploaded securely via Cloudinary.</p>
 
           <div class="field">
             <label>Government ID *</label>
-            <div class="upload-box" @click="$refs.govIdInput.click()">
-              <span class="upload-icon">{{ govIdFile ? '📄' : '⬆️' }}</span>
-              <span v-if="govIdFile" class="upload-name">{{ govIdFile.name }}</span>
+            <div
+              class="upload-box"
+              :class="{ done: govIdDone, loading: govIdUploading }"
+              @click="!govIdUploading && $refs.govIdInput.click()"
+            >
+              <span class="upload-icon">
+                <template v-if="govIdUploading">⏳</template>
+                <template v-else-if="govIdDone">✅</template>
+                <template v-else>⬆️</template>
+              </span>
+              <span v-if="govIdUploading" class="upload-text">Uploading...</span>
+              <span v-else-if="govIdFile" class="upload-name">{{ govIdFile.name }}</span>
               <span v-else class="upload-text">Click to upload</span>
-              <span v-if="govIdFile" class="upload-change">Change</span>
+              <span v-if="govIdDone" class="upload-badge">Uploaded</span>
+              <span v-else-if="govIdFile && !govIdUploading" class="upload-change">Change</span>
             </div>
-            <input ref="govIdInput" type="file" accept="image/*,.pdf" style="display:none"
-              @change="e => govIdFile = e.target.files[0]" />
+            <input ref="govIdInput" type="file" accept="image/*,.pdf" style="display:none" @change="handleGovIdChange" />
           </div>
 
           <div class="field">
             <label>Your Photo *</label>
-            <div class="upload-box" @click="$refs.memberPicInput.click()">
-              <span class="upload-icon">{{ memberPicFile ? '🖼️' : '⬆️' }}</span>
-              <span v-if="memberPicFile" class="upload-name">{{ memberPicFile.name }}</span>
+            <div
+              class="upload-box"
+              :class="{ done: memberPicDone, loading: memberPicUploading }"
+              @click="!memberPicUploading && $refs.memberPicInput.click()"
+            >
+              <span class="upload-icon">
+                <template v-if="memberPicUploading">⏳</template>
+                <template v-else-if="memberPicDone">✅</template>
+                <template v-else>⬆️</template>
+              </span>
+              <span v-if="memberPicUploading" class="upload-text">Uploading...</span>
+              <span v-else-if="memberPicFile" class="upload-name">{{ memberPicFile.name }}</span>
               <span v-else class="upload-text">Click to upload</span>
-              <span v-if="memberPicFile" class="upload-change">Change</span>
+              <span v-if="memberPicDone" class="upload-badge">Uploaded</span>
+              <span v-else-if="memberPicFile && !memberPicUploading" class="upload-change">Change</span>
             </div>
-            <input ref="memberPicInput" type="file" accept="image/*" style="display:none"
-              @change="e => memberPicFile = e.target.files[0]" />
+            <input ref="memberPicInput" type="file" accept="image/*" style="display:none" @change="handleMemberPicChange" />
           </div>
         </div>
 
@@ -245,26 +315,16 @@ main {
   box-shadow: 0 1px 4px rgba(0,0,0,0.14);
 }
 
-.card-header {
-  background: #2c5f2e;
-  padding: 28px 32px;
-  color: white;
-}
-
+.card-header { background: #2c5f2e; padding: 28px 32px; color: white; }
 .card-header h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; }
 .card-header p { margin: 0; font-size: 14px; opacity: 0.8; }
 
 form { background: white; }
 
-.section {
-  padding: 24px 32px;
-  border-bottom: 8px solid #f0ede8;
-}
-
+.section { padding: 24px 32px; border-bottom: 8px solid #f0ede8; }
 .section:last-of-type { border-bottom: none; }
 
 h2 { margin: 0 0 18px; font-size: 15px; font-weight: 600; color: #2c5f2e; }
-
 .hint { margin: -12px 0 14px; font-size: 12px; color: #888; }
 
 .field { margin-bottom: 16px; }
@@ -313,20 +373,10 @@ input:focus, select:focus {
 .chip.active { background: #2c5f2e; border-color: #2c5f2e; color: white; }
 
 .radio-group { display: flex; gap: 20px; }
-
 .radio { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
 .radio input { accent-color: #2c5f2e; }
 
-.checkbox {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 13px;
-  color: #444;
-  cursor: pointer;
-  line-height: 1.5;
-}
-
+.checkbox { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: #444; cursor: pointer; line-height: 1.5; }
 .checkbox input { margin-top: 2px; accent-color: #2c5f2e; flex-shrink: 0; }
 
 .upload-box {
@@ -341,11 +391,15 @@ input:focus, select:focus {
   transition: border-color 0.15s, background 0.15s;
 }
 
-.upload-box:hover { border-color: #2c5f2e; background: #f4f9f4; }
-.upload-icon { font-size: 18px; }
+.upload-box:hover:not(.loading) { border-color: #2c5f2e; background: #f4f9f4; }
+.upload-box.done { border-color: #2c5f2e; border-style: solid; background: #f4f9f4; cursor: default; }
+.upload-box.loading { cursor: default; opacity: 0.7; }
+
+.upload-icon { font-size: 18px; flex-shrink: 0; }
 .upload-text { color: #777; font-size: 13px; }
 .upload-name { font-size: 13px; color: #333; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .upload-change { font-size: 12px; color: #2c5f2e; margin-left: auto; flex-shrink: 0; }
+.upload-badge { font-size: 12px; color: #2c5f2e; font-weight: 600; margin-left: auto; flex-shrink: 0; }
 
 .submit-area { padding: 20px 32px 28px; background: white; }
 
