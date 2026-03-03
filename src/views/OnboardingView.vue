@@ -32,14 +32,15 @@ const govIdDone = ref(false)
 const memberPicDone = ref(false)
 
 const departmentOptions = [
-  'Education & Literacy',
-  'Health & Wellness',
-  'Environment',
-  'Women Empowerment',
-  'Child Welfare',
-  'Community Outreach',
-  'Digital Literacy',
-  'Arts & Culture',
+'People & Culture',
+  'Events & Fundraising',
+  'Programs & Field Team',
+  'Media & Content',
+  'Finance & Compliance',
+  'Outreach & Partnerships',
+  'Strategy & Projects',
+  'Mental Wellbeing',
+  'Tech',
 ]
 
 const isSubmitting = ref(false)
