@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios'
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 const BASE_URL = 'http://localhost:8000'
 
@@ -11,6 +11,7 @@ const form = reactive({
   email: '',
   fullname: '',
   age: null,
+  dob: '',
   gender: '',
   location: '',
   phone_number: '',
@@ -32,7 +33,7 @@ const govIdDone = ref(false)
 const memberPicDone = ref(false)
 
 const departmentOptions = [
-'People & Culture',
+  'People & Culture',
   'Events & Fundraising',
   'Programs & Field Team',
   'Media & Content',
@@ -53,21 +54,29 @@ const toggleDepartment = (dept) => {
   else form.department.splice(idx, 1)
 }
 
+watch(() => form.dob, (dob) => {
+  if (!dob) { form.age = null; return }
+  const today = new Date()
+  const birth = new Date(dob)
+  let age = today.getFullYear() - birth.getFullYear()
+  const notHadBirthdayYet =
+    today.getMonth() < birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())
+  if (notHadBirthdayYet) age--
+  form.age = age
+})
+
 const uploadToCloudinary = async (file, formField, uploading, done) => {
   uploading.value = true
   done.value = false
-
   try {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET)
-
     const { data } = await axios.post(
       `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`,
       formData
     )
-
-    // data.secure_url is the permanent HTTPS URL — stored in form, sent to FastAPI
     form[formField] = data.secure_url
     done.value = true
   } catch (err) {
@@ -96,14 +105,10 @@ const handleSubmit = async () => {
     submitMessage.value = 'Please wait for file uploads to finish.'
     return
   }
-
   isSubmitting.value = true
   submitMessage.value = ''
   submitSuccess.value = false
-
   try {
-    // At this point form.government_id_picture and form.member_picture
-    // are already Cloudinary HTTPS URLs — FastAPI receives them as HttpUrl strings
     await axios.post(`${BASE_URL}/onboard`, {
       ...form,
       age: Number(form.age),
@@ -144,19 +149,24 @@ const handleSubmit = async () => {
 
           <div class="row">
             <div class="field">
-              <label>Age *</label>
-              <input v-model.number="form.age" type="number" min="1" max="120" placeholder="25" required />
+              <label>Date of Birth *</label>
+              <input v-model="form.dob" type="date" required />
             </div>
             <div class="field">
-              <label>Gender *</label>
-              <select v-model="form.gender" required>
-                <option value="" disabled>Select</option>
-                <option>Male</option>
-                <option>Female</option>
-                <option>Non-binary</option>
-                <option>Prefer not to say</option>
-              </select>
+              <label>Age *</label>
+              <input v-model.number="form.age" type="number" placeholder="Auto-calculated" readonly />
             </div>
+          </div>
+
+          <div class="field">
+            <label>Gender *</label>
+            <select v-model="form.gender" required>
+              <option value="" disabled>Select</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Non-binary</option>
+              <option>Prefer not to say</option>
+            </select>
           </div>
 
           <div class="field">
@@ -337,6 +347,7 @@ h2 { margin: 0 0 18px; font-size: 15px; font-weight: 600; color: #2c5f2e; }
 input[type="text"],
 input[type="email"],
 input[type="number"],
+input[type="date"],
 select {
   width: 100%;
   height: 40px;
@@ -437,5 +448,11 @@ button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
   .row { grid-template-columns: 1fr; }
   .section { padding: 20px; }
   .submit-area { padding: 20px; }
+}
+
+input[readonly] {
+  background: #f5f5f5;
+  color: #888;
+  cursor: default;
 }
 </style>
