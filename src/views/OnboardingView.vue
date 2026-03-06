@@ -32,6 +32,8 @@ const memberPicUploading = ref(false)
 const govIdDone = ref(false)
 const memberPicDone = ref(false)
 
+const ageError = ref('')
+
 const departmentOptions = [
   'People & Culture',
   'Events & Fundraising',
@@ -55,6 +57,7 @@ const toggleDepartment = (dept) => {
 }
 
 watch(() => form.dob, (dob) => {
+  ageError.value = ''
   if (!dob) { form.age = null; return }
   const today = new Date()
   const birth = new Date(dob)
@@ -64,6 +67,7 @@ watch(() => form.dob, (dob) => {
     (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())
   if (notHadBirthdayYet) age--
   form.age = age
+  if (age < 16) ageError.value = 'You must be at least 16 years old to volunteer.'
 })
 
 const uploadToCloudinary = async (file, formField, uploading, done) => {
@@ -101,6 +105,7 @@ const handleMemberPicChange = (e) => {
 }
 
 const handleSubmit = async () => {
+  if (ageError.value) return
   if (!govIdDone.value || !memberPicDone.value) {
     submitMessage.value = 'Please wait for file uploads to finish.'
     return
@@ -145,12 +150,14 @@ const handleSubmit = async () => {
           <div class="field">
             <label>Email Address *</label>
             <input v-model="form.email" type="email" placeholder="you@example.com" required />
+            <p class="field-note">📬 A confirmation email with your Member ID will be sent within 5–10 minutes of successful onboarding.</p>
           </div>
 
           <div class="row">
             <div class="field">
               <label>Date of Birth *</label>
               <input v-model="form.dob" type="date" required />
+              <p v-if="ageError" class="field-error">{{ ageError }}</p>
             </div>
             <div class="field">
               <label>Age *</label>
@@ -291,8 +298,8 @@ const handleSubmit = async () => {
         </div>
 
         <div class="submit-area">
-          <button type="submit" :disabled="isSubmitting || form.department.length === 0">
-            {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+          <button type="submit" :disabled="isSubmitting || form.department.length === 0 || !!ageError">
+            {{ isSubmitting ? 'Submitting...' : 'Submit Application' }}
           </button>
           <p v-if="submitMessage" class="message" :class="{ success: submitSuccess }">
             {{ submitMessage }}
@@ -341,6 +348,30 @@ h2 { margin: 0 0 18px; font-size: 15px; font-weight: 600; color: #2c5f2e; }
 .field { margin-bottom: 16px; }
 .field:last-child { margin-bottom: 0; }
 .field > label { display: block; margin-bottom: 6px; font-size: 13px; color: #555; }
+
+/* Email confirmation note */
+.field-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #5a7a5c;
+  background: #f0f7f0;
+  border-left: 3px solid #2c5f2e;
+  padding: 7px 10px;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.5;
+}
+
+/* Age validation error */
+.field-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #b94a3a;
+  background: #fdf1ef;
+  border-left: 3px solid #b94a3a;
+  padding: 7px 10px;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.5;
+}
 
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 
