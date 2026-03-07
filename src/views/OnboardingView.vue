@@ -119,8 +119,18 @@ const handleSubmit = async () => {
       age: Number(form.age),
     })
 
+    // Debug: log the backend response
+    console.log('Backend response:', response.data)
+
     // Send confirmation email with member_id from backend response
-    const { member_id, fullname } = response.data
+    // Use fullname from response if available, otherwise from form
+    const member_id = response.data.member_id
+    const fullname = response.data.fullname || form.fullname
+
+    if (!member_id) {
+      console.error('No member_id in response:', response.data)
+    }
+
     try {
       await axios.post('/api/send-email', {
         email: form.email,
