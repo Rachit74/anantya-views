@@ -114,17 +114,18 @@ const handleSubmit = async () => {
   submitMessage.value = ''
   submitSuccess.value = false
   try {
-    await axios.post(`${BASE_URL}/onboard`, {
+    const response = await axios.post(`${BASE_URL}/onboard`, {
       ...form,
       age: Number(form.age),
     })
 
-    // Send confirmation email
+    // Send confirmation email with member_id from backend response
+    const { member_id, fullname } = response.data
     try {
       await axios.post('/api/send-email', {
         email: form.email,
-        fullname: form.fullname,
-        department: form.department,
+        fullname: fullname,
+        member_id: member_id,
       })
     } catch (emailError) {
       console.error('Failed to send confirmation email:', emailError)
