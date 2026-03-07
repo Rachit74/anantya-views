@@ -118,6 +118,19 @@ const handleSubmit = async () => {
       ...form,
       age: Number(form.age),
     })
+
+    // Send confirmation email
+    try {
+      await axios.post('/api/send-email', {
+        email: form.email,
+        fullname: form.fullname,
+        department: form.department,
+      })
+    } catch (emailError) {
+      console.error('Failed to send confirmation email:', emailError)
+      // Don't fail the whole submission if email fails
+    }
+
     submitSuccess.value = true
     submitMessage.value = 'Submitted successfully. Welcome to Anantya Foundation!'
   } catch (error) {
