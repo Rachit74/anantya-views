@@ -59,7 +59,6 @@ const handleSubmit = async () => {
       <div class="card-header">
         <div class="header-top">
           <div class="logo-mark">
-          <img src="../../public/favicon.ico" alt="">
           </div>
           <div>
             <h1>Anantya Foundation</h1>
