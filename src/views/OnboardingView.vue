@@ -157,8 +157,15 @@ const handleSubmit = async () => {
     <div class="card">
 
       <div class="card-header">
-        <h1>Anantya Foundation</h1>
-        <p>Volunteer Onboarding Form</p>
+        <div class="header-top">
+          <div class="logo-mark">
+            <img src="/favicon.ico" alt="AF" />
+          </div>
+          <div>
+            <h1>Anantya Foundation</h1>
+            <p>Volunteer Onboarding Form</p>
+          </div>
+        </div>
       </div>
 
       <form @submit.prevent="handleSubmit">
@@ -358,8 +365,34 @@ main {
 }
 
 .card-header { background: #2c5f2e; padding: 28px 32px; color: white; }
-.card-header h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; }
-.card-header p { margin: 0; font-size: 14px; opacity: 0.8; }
+
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.card-header h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+.card-header p { margin: 0; font-size: 13px; opacity: 0.75; }
 
 form { background: white; }
 

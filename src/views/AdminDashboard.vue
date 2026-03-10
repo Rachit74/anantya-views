@@ -185,7 +185,9 @@ const initials = (name) => {
     <!-- ── Sidebar ─────────────────────────────────────── -->
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-mark">AF</div>
+        <div class="logo-mark">
+          <img src="/favicon.ico" alt="AF" />
+        </div>
         <div class="logo-text">
           <span class="logo-name">Anantya</span>
           <span class="logo-sub">Foundation</span>
@@ -528,11 +530,14 @@ const initials = (name) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 700;
-  color: white;
-  letter-spacing: 0.5px;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .logo-text { display: flex; flex-direction: column; }

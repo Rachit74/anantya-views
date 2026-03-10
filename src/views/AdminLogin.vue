@@ -49,7 +49,9 @@ const handleSubmit = async () => {
 
       <div class="card-header">
         <div class="header-top">
-          <div class="logo-mark">AF</div>
+          <div class="logo-mark">
+          <img src="/favicon.ico" alt="AF" />
+        </div>
           <div>
             <h1>Anantya Foundation</h1>
             <p>Admin Portal</p>
@@ -162,10 +164,14 @@ main {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.logo-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .card-header h1 { margin: 0 0 3px; font-size: 20px; font-weight: 600; }
