@@ -1,6 +1,6 @@
 <script setup>
 import axios from 'axios'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { BASE_URL } from '@/config'
 
@@ -32,6 +32,7 @@ const currentPage    = ref(1)
 const pageSize       = ref(10)
 const selectedMember = ref(null)
 const adminInfo      = ref(null)
+const sidebarOpen    = ref(false)
 
 // ── Fetch admin info ─────────────────────────────────────────
 const fetchAdminInfo = async () => {
@@ -68,7 +69,19 @@ const fetchMembers = async () => {
 onMounted(async () => {
   await fetchAdminInfo()
   await fetchMembers()
+  document.addEventListener('keydown', handleEscape)
 })
+
+onUnmounted(() => {
+  document.removeEventListener('keydown', handleEscape)
+})
+
+const handleEscape = (e) => {
+  if (e.key === 'Escape') {
+    selectedMember.value = null
+    sidebarOpen.value = false
+  }
+}
 
 // ── Logout ────────────────────────────────────────────────────
 const logout = () => {
@@ -164,13 +177,6 @@ const resetFilters = () => {
   currentPage.value = 1
 }
 
-// ── Department display ────────────────────────────────────────
-const deptLabel = (dept) => {
-  if (!dept) return '—'
-  if (Array.isArray(dept)) return dept.join(', ') || '—'
-  return dept
-}
-
 // ── Initials avatar ───────────────────────────────────────────
 const initials = (name) => {
   if (!name) return '?'
@@ -181,9 +187,21 @@ const initials = (name) => {
 <template>
   <div class="dashboard">
 
-    <!-- ── Sidebar ─────────────────────────────────────── -->
-    <aside class="sidebar">
-      <div class="sidebar-logo">
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <button class="hamburger" @click="sidebarOpen = !sidebarOpen">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="mobile-title">Members</div>
+      <button class="mobile-logout" @click="logout">Sign Out</button>
+    </header>
+
+    <!-- Mobile Overlay -->
+    <div v-if="sidebarOpen" class="mobile-overlay" @click="sidebarOpen = false"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" :class="{ open: sidebarOpen }">
+      <div class="sidebar-header">
         <div class="logo-mark">
           <img src="/favicon.ico" alt="AF" />
         </div>
@@ -195,189 +213,187 @@ const initials = (name) => {
 
       <nav class="sidebar-nav">
         <div class="nav-item active">
-          <span class="nav-icon">👥</span>
+          <span>👥</span>
           <span>Members</span>
-        </div>
-        <div class="nav-item" @click="logout">
-          <span class="nav-icon">🚪</span>
-          <span>Sign Out</span>
         </div>
       </nav>
 
       <div class="sidebar-footer">
-        <div class="admin-pill">
+        <div class="admin-info">
           <div class="admin-avatar">A</div>
-          <div class="admin-meta">
+          <div class="admin-details">
             <span class="admin-label">Admin</span>
             <span class="admin-id">{{ adminInfo?.admin_id?.slice(0, 8) || '...' }}</span>
           </div>
         </div>
+        <button class="logout-btn" @click="logout">
+          <span>🚪</span>
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
 
-    <!-- ── Main ───────────────────────────────────────── -->
+    <!-- Main Content -->
     <main class="main">
 
-      <!-- Top bar -->
-      <header class="topbar">
-        <div class="topbar-left">
-          <h1 class="page-title">Members</h1>
-          <span class="page-sub">Registered volunteers</span>
+      <!-- Page Header -->
+      <div class="page-header">
+        <div class="page-header-left">
+          <h1>Members</h1>
+          <p>Registered volunteers</p>
         </div>
         <button class="refresh-btn" @click="fetchMembers" :disabled="loading">
           <span :class="{ spinning: loading }">↻</span>
           Refresh
         </button>
-      </header>
+      </div>
 
-      <!-- Stat cards -->
+      <!-- Stats -->
       <div class="stats-row">
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.total }}</div>
-          <div class="stat-label">Total Members</div>
+        <div class="stat-item">
+          <span class="stat-num">{{ stats.total }}</span>
+          <span class="stat-label">Total Members</span>
         </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.admins }}</div>
-          <div class="stat-label">Admins</div>
+        <div class="stat-item">
+          <span class="stat-num">{{ stats.admins }}</span>
+          <span class="stat-label">Admins</span>
         </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.canAttend }}</div>
-          <div class="stat-label">Can Attend Events</div>
+        <div class="stat-item">
+          <span class="stat-num">{{ stats.canAttend }}</span>
+          <span class="stat-label">Can Attend</span>
         </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.experienced }}</div>
-          <div class="stat-label">Previously Volunteered</div>
+        <div class="stat-item">
+          <span class="stat-num">{{ stats.experienced }}</span>
+          <span class="stat-label">Experienced</span>
         </div>
       </div>
 
       <!-- Filters -->
-      <div class="filters-bar">
-        <div class="search-wrap">
+      <div class="filters">
+        <div class="search-box">
           <span class="search-icon">🔍</span>
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search by name, email, ID, location…"
+            placeholder="Search name, email, ID..."
             @input="currentPage = 1"
           />
         </div>
 
-        <select v-model="filterGender" @change="currentPage = 1">
-          <option value="">All Genders</option>
-          <option>Male</option>
-          <option>Female</option>
-          <option>Non-binary</option>
-          <option>Prefer not to say</option>
-        </select>
+        <div class="filter-row">
+          <select v-model="filterGender" @change="currentPage = 1">
+            <option value="">All Genders</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Non-binary</option>
+            <option>Prefer not to say</option>
+          </select>
 
-        <select v-model="filterDept" @change="currentPage = 1">
-          <option value="">All Departments</option>
-          <option v-for="d in allDepartments" :key="d">{{ d }}</option>
-        </select>
+          <select v-model="filterDept" @change="currentPage = 1">
+            <option value="">All Departments</option>
+            <option v-for="d in allDepartments" :key="d">{{ d }}</option>
+          </select>
 
-        <select v-model="filterAdmin" @change="currentPage = 1">
-          <option value="">All Roles</option>
-          <option value="true">Admins only</option>
-          <option value="false">Members only</option>
-        </select>
+          <select v-model="filterAdmin" @change="currentPage = 1">
+            <option value="">All Roles</option>
+            <option value="true">Admins</option>
+            <option value="false">Members</option>
+          </select>
 
-        <button class="reset-btn" @click="resetFilters">✕ Clear</button>
+          <button class="clear-btn" @click="resetFilters">✕ Clear</button>
+        </div>
       </div>
 
       <!-- Error -->
-      <div v-if="fetchError" class="error-banner">
+      <div v-if="fetchError" class="error-msg">
         ⚠️ {{ fetchError }}
       </div>
 
-      <!-- Loading skeleton -->
-      <div v-if="loading" class="skeleton-wrap">
-        <div v-for="i in 6" :key="i" class="skeleton-row"></div>
+      <!-- Loading -->
+      <div v-if="loading" class="loading-state">
+        <div v-for="i in 5" :key="i" class="skeleton-row"></div>
       </div>
 
-      <!-- Table -->
+      <!-- Members Table -->
       <div v-else-if="members.length" class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Member</th>
-              <th class="sortable" @click="setSort('member_id')">ID {{ sortIcon('member_id') }}</th>
-              <th class="sortable" @click="setSort('location')">Location {{ sortIcon('location') }}</th>
-              <th class="sortable" @click="setSort('profession')">Profession {{ sortIcon('profession') }}</th>
-              <th>Departments</th>
-              <th class="sortable" @click="setSort('gender')">Gender {{ sortIcon('gender') }}</th>
-              <th>Role</th>
-              <th>Events</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="member in paginated"
-              :key="member.member_id"
-              @click="selectedMember = member"
-              class="member-row"
-            >
-              <td>
-                <div class="member-cell">
-                  <div class="avatar">
-                    <img
-                      v-if="member.member_picture"
-                      :src="member.member_picture"
-                      :alt="member.fullname"
-                    />
-                    <span v-else>{{ initials(member.fullname) }}</span>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th class="sortable" @click="setSort('member_id')">ID {{ sortIcon('member_id') }}</th>
+                <th class="sortable" @click="setSort('location')">Location {{ sortIcon('location') }}</th>
+                <th class="sortable" @click="setSort('profession')">Profession {{ sortIcon('profession') }}</th>
+                <th>Departments</th>
+                <th class="sortable" @click="setSort('gender')">Gender {{ sortIcon('gender') }}</th>
+                <th>Role</th>
+                <th>Events</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="member in paginated"
+                :key="member.member_id"
+                @click="selectedMember = member"
+              >
+                <td>
+                  <div class="member-cell">
+                    <div class="avatar">
+                      <img v-if="member.member_picture" :src="member.member_picture" :alt="member.fullname" />
+                      <span v-else>{{ initials(member.fullname) }}</span>
+                    </div>
+                    <div class="member-info">
+                      <span class="member-name">{{ member.fullname }}</span>
+                      <span class="member-email">{{ member.email }}</span>
+                    </div>
                   </div>
-                  <div class="member-info">
-                    <span class="member-name">{{ member.fullname }}</span>
-                    <span class="member-email">{{ member.email }}</span>
+                </td>
+                <td><code class="id-code">{{ member.member_id }}</code></td>
+                <td>{{ member.location || '—' }}</td>
+                <td>{{ member.profession || '—' }}</td>
+                <td>
+                  <div class="chips">
+                    <span
+                      v-for="d in (Array.isArray(member.department) ? member.department.slice(0,2) : [member.department])"
+                      :key="d"
+                      class="chip"
+                    >{{ d }}</span>
+                    <span v-if="Array.isArray(member.department) && member.department.length > 2" class="chip more">
+                      +{{ member.department.length - 2 }}
+                    </span>
                   </div>
-                </div>
-              </td>
-              <td><code class="id-code">{{ member.member_id }}</code></td>
-              <td>{{ member.location || '—' }}</td>
-              <td>{{ member.profession || '—' }}</td>
-              <td>
-                <div class="dept-chips">
-                  <span
-                    v-for="d in (Array.isArray(member.department) ? member.department.slice(0,2) : [member.department])"
-                    :key="d"
-                    class="dept-chip"
-                  >{{ d }}</span>
-                  <span
-                    v-if="Array.isArray(member.department) && member.department.length > 2"
-                    class="dept-chip more"
-                  >+{{ member.department.length - 2 }}</span>
-                </div>
-              </td>
-              <td>{{ member.gender || '—' }}</td>
-              <td>
-                <span class="role-badge" :class="{ admin: member.is_admin }">
-                  {{ member.is_admin ? 'Admin' : 'Member' }}
-                </span>
-              </td>
-              <td>
-                <span class="attend-badge" :class="{ yes: member.can_attend_events }">
-                  {{ member.can_attend_events ? 'Yes' : 'No' }}
-                </span>
-              </td>
-              <td>
-                <button class="view-btn" @click.stop="selectedMember = member">View</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+                <td>{{ member.gender || '—' }}</td>
+                <td>
+                  <span class="badge" :class="{ admin: member.is_admin }">
+                    {{ member.is_admin ? 'Admin' : 'Member' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="badge" :class="{ yes: member.can_attend_events }">
+                    {{ member.can_attend_events ? 'Yes' : 'No' }}
+                  </span>
+                </td>
+                <td>
+                  <button class="view-btn" @click.stop="selectedMember = member">View</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <!-- Pagination -->
         <div class="pagination">
-          <span class="pag-info">
-            Showing {{ Math.min((currentPage - 1) * pageSize + 1, filtered.length) }}–{{ Math.min(currentPage * pageSize, filtered.length) }} of {{ filtered.length }}
+          <span class="page-info">
+            {{ Math.min((currentPage - 1) * pageSize + 1, filtered.length) }}–{{ Math.min(currentPage * pageSize, filtered.length) }} of {{ filtered.length }}
           </span>
-          <div class="pag-controls">
+          <div class="page-controls">
             <button @click="currentPage--" :disabled="currentPage === 1">‹ Prev</button>
-            <span class="pag-current">{{ currentPage }} / {{ totalPages }}</span>
+            <span class="page-num">{{ currentPage }} / {{ totalPages }}</span>
             <button @click="currentPage++" :disabled="currentPage === totalPages">Next ›</button>
           </div>
-          <select v-model.number="pageSize" @change="currentPage = 1" class="page-size">
+          <select v-model.number="pageSize" @change="currentPage = 1">
             <option :value="10">10 / page</option>
             <option :value="25">25 / page</option>
             <option :value="50">50 / page</option>
@@ -385,104 +401,80 @@ const initials = (name) => {
         </div>
       </div>
 
-      <!-- Empty state -->
+      <!-- Empty State -->
       <div v-else class="empty-state">
         <p>🌿 No members found.</p>
       </div>
 
     </main>
 
-    <!-- ── Member Detail Drawer ───────────────────────── -->
-    <transition name="drawer">
-      <div v-if="selectedMember" class="drawer-overlay" @click.self="selectedMember = null">
-        <aside class="drawer">
-          <button class="drawer-close" @click="selectedMember = null">✕</button>
+    <!-- Member Detail Drawer -->
+    <div v-if="selectedMember" class="drawer-overlay" @click="selectedMember = null">
+      <aside class="drawer" @click.stop>
+        <button class="drawer-close" @click="selectedMember = null">✕</button>
 
-          <div class="drawer-header">
-            <div class="drawer-avatar">
-              <img
-                v-if="selectedMember.member_picture"
-                :src="selectedMember.member_picture"
-                :alt="selectedMember.fullname"
-              />
-              <span v-else>{{ initials(selectedMember.fullname) }}</span>
-            </div>
-            <div>
-              <h2>{{ selectedMember.fullname }}</h2>
-              <code class="id-code">{{ selectedMember.member_id }}</code>
-            </div>
+        <div class="drawer-header">
+          <div class="avatar large">
+            <img v-if="selectedMember.member_picture" :src="selectedMember.member_picture" :alt="selectedMember.fullname" />
+            <span v-else>{{ initials(selectedMember.fullname) }}</span>
           </div>
+          <div>
+            <h2>{{ selectedMember.fullname }}</h2>
+            <code class="id-code">{{ selectedMember.member_id }}</code>
+          </div>
+        </div>
 
-          <div class="drawer-badges">
-            <span class="role-badge" :class="{ admin: selectedMember.is_admin }">
-              {{ selectedMember.is_admin ? 'Admin' : 'Member' }}
-            </span>
-            <span class="attend-badge" :class="{ yes: selectedMember.can_attend_events }">
-              {{ selectedMember.can_attend_events ? 'Attends Events' : 'Remote Only' }}
-            </span>
-            <span class="attend-badge" :class="{ yes: selectedMember.volunteered_before === 'Yes' }">
-              {{ selectedMember.volunteered_before === 'Yes' ? 'Experienced' : 'First-time' }}
-            </span>
-          </div>
+        <div class="drawer-badges">
+          <span class="badge" :class="{ admin: selectedMember.is_admin }">
+            {{ selectedMember.is_admin ? 'Admin' : 'Member' }}
+          </span>
+          <span class="badge" :class="{ yes: selectedMember.can_attend_events }">
+            {{ selectedMember.can_attend_events ? 'Attends Events' : 'Remote Only' }}
+          </span>
+          <span class="badge" :class="{ yes: selectedMember.volunteered_before === 'Yes' }">
+            {{ selectedMember.volunteered_before === 'Yes' ? 'Experienced' : 'First-time' }}
+          </span>
+        </div>
 
-          <div class="drawer-section">
-            <div class="drawer-row">
-              <span class="dr-label">Email</span>
-              <span class="dr-value">{{ selectedMember.email }}</span>
-            </div>
-            <div class="drawer-row">
-              <span class="dr-label">Phone</span>
-              <span class="dr-value">{{ selectedMember.phone_number || '—' }}</span>
-            </div>
-            <div class="drawer-row">
-              <span class="dr-label">Age</span>
-              <span class="dr-value">{{ selectedMember.age ?? '—' }}</span>
-            </div>
-            <div class="drawer-row">
-              <span class="dr-label">Date of Birth</span>
-              <span class="dr-value">{{ selectedMember.dob || '—' }}</span>
-            </div>
-            <div class="drawer-row">
-              <span class="dr-label">Gender</span>
-              <span class="dr-value">{{ selectedMember.gender || '—' }}</span>
-            </div>
-            <div class="drawer-row">
-              <span class="dr-label">Location</span>
-              <span class="dr-value">{{ selectedMember.location || '—' }}</span>
-            </div>
-          </div>
+        <div class="drawer-section">
+          <h3>Contact</h3>
+          <div class="row"><span class="label">Email</span><span>{{ selectedMember.email }}</span></div>
+          <div class="row"><span class="label">Phone</span><span>{{ selectedMember.phone_number || '—' }}</span></div>
+        </div>
 
-          <div class="drawer-section">
-            <div class="drawer-row">
-              <span class="dr-label">Profession</span>
-              <span class="dr-value">{{ selectedMember.profession || '—' }}</span>
-            </div>
-            <div class="drawer-row">
-              <span class="dr-label">Organisation</span>
-              <span class="dr-value">{{ selectedMember.place_of_profession || '—' }}</span>
-            </div>
-          </div>
+        <div class="drawer-section">
+          <h3>Personal</h3>
+          <div class="row"><span class="label">Age</span><span>{{ selectedMember.age ?? '—' }}</span></div>
+          <div class="row"><span class="label">DOB</span><span>{{ selectedMember.dob || '—' }}</span></div>
+          <div class="row"><span class="label">Gender</span><span>{{ selectedMember.gender || '—' }}</span></div>
+          <div class="row"><span class="label">Location</span><span>{{ selectedMember.location || '—' }}</span></div>
+        </div>
 
-          <div class="drawer-section">
-            <p class="dr-label" style="margin-bottom:8px">Departments</p>
-            <div class="dept-chips">
-              <span
-                v-for="d in (Array.isArray(selectedMember.department) ? selectedMember.department : [selectedMember.department])"
-                :key="d"
-                class="dept-chip"
-              >{{ d }}</span>
-            </div>
-          </div>
+        <div class="drawer-section">
+          <h3>Professional</h3>
+          <div class="row"><span class="label">Profession</span><span>{{ selectedMember.profession || '—' }}</span></div>
+          <div class="row"><span class="label">Organisation</span><span>{{ selectedMember.place_of_profession || '—' }}</span></div>
+        </div>
 
-          <div v-if="selectedMember.government_id_picture" class="drawer-section">
-            <p class="dr-label" style="margin-bottom:8px">Government ID</p>
-            <a :href="selectedMember.government_id_picture" target="_blank" class="doc-link">
-              🪪 View Government ID →
-            </a>
+        <div class="drawer-section">
+          <h3>Departments</h3>
+          <div class="chips">
+            <span
+              v-for="d in (Array.isArray(selectedMember.department) ? selectedMember.department : [selectedMember.department])"
+              :key="d"
+              class="chip"
+            >{{ d }}</span>
           </div>
-        </aside>
-      </div>
-    </transition>
+        </div>
+
+        <div v-if="selectedMember.government_id_picture" class="drawer-section">
+          <h3>Documents</h3>
+          <a :href="selectedMember.government_id_picture" target="_blank" class="doc-link">
+            🪪 View Government ID
+          </a>
+        </div>
+      </aside>
+    </div>
 
   </div>
 </template>
@@ -490,6 +482,7 @@ const initials = (name) => {
 <style scoped>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Layout */
 .dashboard {
   display: flex;
   min-height: 100vh;
@@ -499,31 +492,91 @@ const initials = (name) => {
   color: #333;
 }
 
-/* ── Sidebar ─────────────────────────────────────────────── */
+/* Mobile Header */
+.mobile-header {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #2c5f2e;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  z-index: 100;
+}
+
+.hamburger {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: white;
+  border-radius: 1px;
+}
+
+.mobile-title {
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.mobile-logout {
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.mobile-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 150;
+}
+
+/* Sidebar */
 .sidebar {
   width: 220px;
   flex-shrink: 0;
   background: #2c5f2e;
   display: flex;
   flex-direction: column;
-  padding: 0;
   position: sticky;
   top: 0;
   height: 100vh;
 }
 
-.sidebar-logo {
+.sidebar-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 24px 20px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
+  gap: 12px;
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .logo-mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 7px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
   background: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.25);
   display: flex;
@@ -540,15 +593,12 @@ const initials = (name) => {
 }
 
 .logo-text { display: flex; flex-direction: column; }
-.logo-name { font-size: 14px; font-weight: 600; color: white; line-height: 1.2; }
-.logo-sub  { font-size: 11px; color: rgba(255,255,255,0.6); }
+.logo-name { font-size: 15px; font-weight: 600; color: white; }
+.logo-sub { font-size: 12px; color: rgba(255,255,255,0.65); }
 
 .sidebar-nav {
   flex: 1;
   padding: 16px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
 }
 
 .nav-item {
@@ -558,49 +608,64 @@ const initials = (name) => {
   padding: 10px 12px;
   border-radius: 6px;
   color: rgba(255,255,255,0.7);
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
 }
 
 .nav-item:hover { background: rgba(255,255,255,0.1); color: white; }
-.nav-item.active { background: rgba(255,255,255,0.15); color: white; font-weight: 500; }
-
-.nav-icon { font-size: 16px; }
+.nav-item.active { background: rgba(255,255,255,0.15); color: white; }
 
 .sidebar-footer {
   padding: 16px 12px;
-  border-top: 1px solid rgba(255,255,255,0.12);
+  border-top: 1px solid rgba(255,255,255,0.1);
 }
 
-.admin-pill {
+.admin-info {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 10px;
   background: rgba(0,0,0,0.15);
-  border-radius: 8px;
+  border-radius: 6px;
+  margin-bottom: 8px;
 }
 
 .admin-avatar {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: rgba(255,255,255,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: white;
   flex-shrink: 0;
 }
 
-.admin-meta { display: flex; flex-direction: column; overflow: hidden; }
+.admin-details { display: flex; flex-direction: column; }
 .admin-label { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.5px; }
-.admin-id { font-size: 12px; color: rgba(255,255,255,0.8); font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.admin-id { font-size: 12px; color: rgba(255,255,255,0.8); font-family: monospace; }
 
-/* ── Main ────────────────────────────────────────────────── */
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.logout-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+
+/* Main */
 .main {
   flex: 1;
   padding: 32px;
@@ -608,23 +673,26 @@ const initials = (name) => {
   min-width: 0;
 }
 
-.topbar {
+/* Page Header */
+.page-header {
   display: flex;
-  align-items: flex-end;
   justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 24px;
+  gap: 16px;
 }
 
-.topbar-left { display: flex; flex-direction: column; gap: 2px; }
-
-.page-title {
+.page-header-left h1 {
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 600;
   color: #1a1a1a;
-  line-height: 1;
+  margin-bottom: 2px;
 }
 
-.page-sub { font-size: 13px; color: #888; }
+.page-header-left p {
+  font-size: 13px;
+  color: #888;
+}
 
 .refresh-btn {
   display: flex;
@@ -632,91 +700,95 @@ const initials = (name) => {
   gap: 6px;
   padding: 8px 16px;
   border: 1px solid #dadce0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: white;
   font-size: 13px;
   font-family: inherit;
   color: #444;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
 }
 
-.refresh-btn:hover:not(:disabled) { border-color: #2c5f2e; color: #2c5f2e; background: #f4f9f4; }
+.refresh-btn:hover:not(:disabled) { border-color: #2c5f2e; color: #2c5f2e; }
 .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .spinning { display: inline-block; animation: spin 0.7s linear infinite; }
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Stats ───────────────────────────────────────────────── */
+/* Stats */
 .stats-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
-.stat-card {
+.stat-item {
+  flex: 1;
   background: white;
-  border-radius: 8px;
-  padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-  border-left: 4px solid #2c5f2e;
+  border-radius: 6px;
+  padding: 16px 20px;
+  border-left: 3px solid #2c5f2e;
 }
 
-.stat-value {
+.stat-num {
+  display: block;
   font-size: 28px;
   font-weight: 700;
   color: #2c5f2e;
   line-height: 1;
-  margin-bottom: 4px;
 }
 
-.stat-label { font-size: 12px; color: #888; }
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
 
-/* ── Filters ─────────────────────────────────────────────── */
-.filters-bar {
-  display: flex;
-  gap: 10px;
+/* Filters */
+.filters {
+  background: white;
+  border-radius: 6px;
+  padding: 16px 20px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
-  align-items: center;
 }
 
-.search-wrap {
-  flex: 1;
-  min-width: 200px;
+.search-box {
   position: relative;
-  display: flex;
-  align-items: center;
+  margin-bottom: 12px;
 }
 
 .search-icon {
   position: absolute;
-  left: 10px;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 14px;
 }
 
-.search-wrap input {
+.search-box input {
   width: 100%;
-  height: 38px;
+  height: 40px;
   border: 1px solid #dadce0;
-  border-radius: 6px;
-  padding: 0 12px 0 34px;
-  font-size: 13px;
+  border-radius: 4px;
+  padding: 0 12px 0 36px;
+  font-size: 14px;
   font-family: inherit;
   color: #333;
   outline: none;
-  background: white;
-  transition: border-color 0.15s;
 }
 
-.search-wrap input:focus { border-color: #2c5f2e; }
+.search-box input:focus { border-color: #2c5f2e; border-bottom: 2px solid #2c5f2e; }
 
-.filters-bar select {
-  height: 38px;
+.filter-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-row select {
+  height: 36px;
   border: 1px solid #dadce0;
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 0 10px;
   font-size: 13px;
   font-family: inherit;
@@ -724,81 +796,76 @@ const initials = (name) => {
   background: white;
   outline: none;
   cursor: pointer;
-  transition: border-color 0.15s;
 }
 
-.filters-bar select:focus { border-color: #2c5f2e; }
+.filter-row select:focus { border-color: #2c5f2e; }
 
-.reset-btn {
-  height: 38px;
+.clear-btn {
+  height: 36px;
   padding: 0 14px;
-  border: 1px solid #e0d8d0;
-  border-radius: 6px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
   background: white;
   font-size: 12px;
   font-family: inherit;
   color: #888;
   cursor: pointer;
-  transition: all 0.15s;
-  white-space: nowrap;
 }
 
-.reset-btn:hover { border-color: #b94a3a; color: #b94a3a; background: #fdf1ef; }
+.clear-btn:hover { border-color: #c0392b; color: #c0392b; }
 
-/* ── Error ───────────────────────────────────────────────── */
-.error-banner {
+/* Error */
+.error-msg {
   padding: 12px 16px;
   background: #fdecea;
-  border: 1px solid #f5c6c2;
-  border-left: 4px solid #c0392b;
-  border-radius: 6px;
+  border-left: 3px solid #c0392b;
+  border-radius: 4px;
   color: #c0392b;
   font-size: 13px;
   margin-bottom: 16px;
 }
 
-/* ── Skeleton ────────────────────────────────────────────── */
-.skeleton-wrap {
+/* Loading */
+.loading-state {
   background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border-radius: 6px;
   padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .skeleton-row {
-  height: 44px;
+  height: 48px;
   background: linear-gradient(90deg, #f0ede8 25%, #e8e4de 50%, #f0ede8 75%);
   background-size: 200% 100%;
-  border-radius: 6px;
+  border-radius: 4px;
+  margin-bottom: 8px;
   animation: shimmer 1.2s infinite;
 }
 
+.skeleton-row:last-child { margin-bottom: 0; }
+
 @keyframes shimmer {
-  0%   { background-position: 200% 0; }
+  0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
-/* ── Table ───────────────────────────────────────────────── */
+/* Table */
 .table-wrap {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  border-radius: 6px;
   overflow: hidden;
+}
+
+.table-scroll {
+  overflow-x: auto;
 }
 
 table {
   width: 100%;
+  min-width: 900px;
   border-collapse: collapse;
 }
 
-thead tr {
-  background: #f7f6f3;
-  border-bottom: 2px solid #ebebeb;
-}
+thead tr { background: #f7f6f3; }
 
 th {
   padding: 12px 14px;
@@ -808,30 +875,19 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #888;
-  white-space: nowrap;
+  border-bottom: 2px solid #ebebeb;
 }
 
-th.sortable {
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.15s;
-}
-
+th.sortable { cursor: pointer; }
 th.sortable:hover { color: #2c5f2e; }
 
-.member-row {
-  border-bottom: 1px solid #f0ede8;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.member-row:hover { background: #fafaf8; }
-.member-row:last-child { border-bottom: none; }
+tbody tr { border-bottom: 1px solid #f0ede8; cursor: pointer; }
+tbody tr:hover { background: #fafaf8; }
+tbody tr:last-child { border-bottom: none; }
 
 td {
   padding: 12px 14px;
   font-size: 13px;
-  color: #333;
   vertical-align: middle;
 }
 
@@ -839,15 +895,14 @@ td {
 .member-cell { display: flex; align-items: center; gap: 10px; }
 
 .avatar {
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #e8f0e8;
-  border: 1px solid #d0e0d0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: #2c5f2e;
   flex-shrink: 0;
@@ -857,7 +912,7 @@ td {
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .member-info { display: flex; flex-direction: column; gap: 2px; }
-.member-name { font-weight: 500; color: #1a1a1a; font-size: 13px; }
+.member-name { font-weight: 500; color: #1a1a1a; }
 .member-email { font-size: 11px; color: #999; }
 
 .id-code {
@@ -865,54 +920,42 @@ td {
   font-size: 11px;
   background: #f5f5f5;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: 3px;
   color: #555;
 }
 
-/* Dept chips */
-.dept-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+/* Chips */
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
 
-.dept-chip {
+.chip {
   padding: 2px 8px;
   border-radius: 999px;
   background: #e8f0e8;
   color: #2c5f2e;
   font-size: 11px;
   font-weight: 500;
-  white-space: nowrap;
 }
 
-.dept-chip.more {
+.chip.more {
   background: #f0ede8;
   color: #888;
 }
 
 /* Badges */
-.role-badge {
+.badge {
   display: inline-block;
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   background: #f0ede8;
   color: #888;
 }
 
-.role-badge.admin { background: #2c5f2e; color: white; }
+.badge.admin { background: #2c5f2e; color: white; }
+.badge.yes { background: #e8f0e8; color: #2c5f2e; }
 
-.attend-badge {
-  display: inline-block;
-  padding: 2px 10px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 500;
-  background: #fdecea;
-  color: #c0392b;
-}
-
-.attend-badge.yes { background: #e8f0e8; color: #2c5f2e; }
-
-/* View btn */
+/* View button */
 .view-btn {
   padding: 4px 12px;
   border: 1px solid #dadce0;
@@ -922,13 +965,11 @@ td {
   font-family: inherit;
   color: #444;
   cursor: pointer;
-  transition: all 0.12s;
-  white-space: nowrap;
 }
 
-.view-btn:hover { border-color: #2c5f2e; color: #2c5f2e; background: #f4f9f4; }
+.view-btn:hover { border-color: #2c5f2e; color: #2c5f2e; }
 
-/* ── Pagination ──────────────────────────────────────────── */
+/* Pagination */
 .pagination {
   display: flex;
   align-items: center;
@@ -939,15 +980,11 @@ td {
   flex-wrap: wrap;
 }
 
-.pag-info { font-size: 12px; color: #888; }
+.page-info { font-size: 12px; color: #888; }
 
-.pag-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.page-controls { display: flex; align-items: center; gap: 8px; }
 
-.pag-controls button {
+.page-controls button {
   padding: 5px 12px;
   border: 1px solid #dadce0;
   border-radius: 4px;
@@ -956,15 +993,14 @@ td {
   font-family: inherit;
   color: #444;
   cursor: pointer;
-  transition: all 0.12s;
 }
 
-.pag-controls button:hover:not(:disabled) { border-color: #2c5f2e; color: #2c5f2e; }
-.pag-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-controls button:hover:not(:disabled) { border-color: #2c5f2e; color: #2c5f2e; }
+.page-controls button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.pag-current { font-size: 13px; color: #555; min-width: 50px; text-align: center; }
+.page-num { font-size: 13px; color: #555; }
 
-.page-size {
+.pagination select {
   height: 30px;
   border: 1px solid #dadce0;
   border-radius: 4px;
@@ -973,87 +1009,67 @@ td {
   font-family: inherit;
   color: #444;
   background: white;
-  outline: none;
-  cursor: pointer;
 }
 
-/* ── Empty state ─────────────────────────────────────────── */
+/* Empty state */
 .empty-state {
   background: white;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 60px;
   text-align: center;
   color: #aaa;
-  font-size: 15px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
 }
 
-/* ── Drawer ──────────────────────────────────────────────── */
+/* Drawer */
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.3);
-  z-index: 100;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
   display: flex;
   justify-content: flex-end;
 }
 
 .drawer {
   width: 380px;
-  max-width: 95vw;
+  max-width: 100%;
   height: 100%;
   background: white;
   overflow-y: auto;
-  padding: 28px 28px 40px;
+  padding: 24px;
   position: relative;
-  box-shadow: -4px 0 24px rgba(0,0,0,0.12);
 }
 
 .drawer-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 12px;
+  right: 12px;
   width: 32px;
   height: 32px;
   border: 1px solid #dadce0;
   border-radius: 50%;
   background: white;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   color: #666;
-  transition: all 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.drawer-close:hover { border-color: #b94a3a; color: #b94a3a; }
+.drawer-close:hover { border-color: #c0392b; color: #c0392b; }
 
 .drawer-header {
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 16px;
-  padding-right: 40px;
+  padding-right: 36px;
 }
 
-.drawer-avatar {
+.avatar.large {
   width: 56px;
   height: 56px;
-  border-radius: 50%;
-  background: #e8f0e8;
-  border: 2px solid #d0e0d0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   font-size: 18px;
-  font-weight: 700;
-  color: #2c5f2e;
-  flex-shrink: 0;
-  overflow: hidden;
+  border: 2px solid #d0e0d0;
 }
-
-.drawer-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .drawer-header h2 {
   font-size: 17px;
@@ -1074,62 +1090,100 @@ td {
   border-top: 1px solid #f0ede8;
 }
 
-.drawer-row {
+.drawer-section h3 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #888;
+  margin-bottom: 12px;
+}
+
+.drawer-section .row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
-.drawer-row:last-child { margin-bottom: 0; }
+.drawer-section .row:last-child { margin-bottom: 0; }
 
-.dr-label {
-  font-size: 12px;
-  color: #999;
-  flex-shrink: 0;
-  padding-top: 1px;
+.drawer-section .label {
+  font-size: 13px;
+  color: #888;
 }
 
-.dr-value {
+.drawer-section .row span:last-child {
   font-size: 13px;
   color: #333;
   text-align: right;
-  word-break: break-word;
 }
 
 .doc-link {
   display: inline-block;
-  font-size: 13px;
+  padding: 8px 14px;
+  background: #f4f9f4;
+  border: 1px solid #d0e0d0;
+  border-radius: 4px;
   color: #2c5f2e;
   text-decoration: none;
-  padding: 8px 14px;
-  border: 1px solid #d0e0d0;
-  border-radius: 6px;
-  background: #f4f9f4;
-  transition: background 0.15s;
+  font-size: 13px;
 }
 
 .doc-link:hover { background: #e8f0e8; }
 
-/* ── Drawer transition ───────────────────────────────────── */
-.drawer-enter-active,
-.drawer-leave-active { transition: opacity 0.2s; }
-.drawer-enter-from,
-.drawer-leave-to { opacity: 0; }
-.drawer-enter-active .drawer,
-.drawer-leave-active .drawer { transition: transform 0.25s ease; }
-.drawer-enter-from .drawer,
-.drawer-leave-to .drawer { transform: translateX(100%); }
-
-/* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
+/* Responsive */
+@media (max-width: 1024px) {
+  .stats-row { flex-wrap: wrap; }
+  .stat-item { min-width: calc(50% - 8px); }
 }
 
-@media (max-width: 700px) {
-  .sidebar { display: none; }
-  .main { padding: 16px; }
-  .stats-row { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 768px) {
+  .mobile-header { display: flex; }
+  .mobile-overlay { display: block; }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 200;
+  }
+
+  .sidebar.open { transform: translateX(0); }
+
+  .main {
+    padding: 72px 16px 24px;
+  }
+
+  .page-header { margin-bottom: 16px; }
+  .page-header-left h1 { font-size: 18px; }
+  .refresh-btn { padding: 6px 12px; font-size: 12px; }
+
+  .stats-row { gap: 10px; }
+  .stat-item { padding: 12px 16px; }
+  .stat-num { font-size: 24px; }
+
+  .filters { padding: 12px 16px; }
+  .filter-row select { flex: 1; min-width: 0; }
+
+  .drawer {
+    width: 100%;
+    padding: 72px 16px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-item { min-width: 100%; }
+
+  .pagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .page-controls { justify-content: center; }
+  .pagination select { align-self: center; }
 }
 </style>
