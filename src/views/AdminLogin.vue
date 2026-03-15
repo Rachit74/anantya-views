@@ -2,8 +2,7 @@
 import axios from 'axios'
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-
-const BASE_URL = 'https://anantya-api.onrender.com'
+import { BASE_URL } from '@/config'
 
 const router = useRouter()
 

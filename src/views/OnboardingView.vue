@@ -1,8 +1,7 @@
 <script setup>
 import axios from 'axios'
 import { reactive, ref, watch } from 'vue'
-
-const BASE_URL = 'https://anantya-api.onrender.com'
+import { BASE_URL } from '@/config'
 
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET

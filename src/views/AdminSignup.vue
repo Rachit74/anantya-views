@@ -1,8 +1,7 @@
 <script setup>
 import axios from 'axios'
 import { reactive, ref, watch } from 'vue'
-
-const BASE_URL = 'https://anantya-api.onrender.com'
+import { BASE_URL } from '@/config'
 
 const form = reactive({
   member_id: '',
@@ -43,7 +42,7 @@ const handleSubmit = async () => {
   try {
     const response = await axios.post(`${BASE_URL}/admin_signup`, { ...form })
     submitSuccess.value = true
-    submitMessage.value = `Admin registered successfully! Your Admin ID: ${response.data.admin_id}`
+    submitMessage.value = `Admin registered successfully!`
   } catch (error) {
     submitMessage.value = error?.response?.data?.detail || error.message
   } finally {
