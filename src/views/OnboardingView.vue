@@ -167,6 +167,10 @@ const handleSubmit = async () => {
         </div>
       </div>
 
+      <div class="info-banner">
+        ⚠️ Servers are running slow. You may experience some latency. Thank you for your patience.
+      </div>
+
       <form @submit.prevent="handleSubmit">
 
         <div class="section">
@@ -329,6 +333,7 @@ const handleSubmit = async () => {
 
         <div class="submit-area">
           <button type="submit" :disabled="isSubmitting || form.department.length === 0 || !!ageError">
+            <span v-if="isSubmitting" class="spinner"></span>
             {{ isSubmitting ? 'Submitting...' : 'Submit Application' }}
           </button>
           <p v-if="submitMessage" class="message" :class="{ success: submitSuccess }">
@@ -392,6 +397,15 @@ main {
 
 .card-header h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
 .card-header p { margin: 0; font-size: 13px; opacity: 0.75; }
+
+.info-banner {
+  background: #fff8e1;
+  border-bottom: 1px solid #ffe082;
+  padding: 10px 32px;
+  font-size: 13px;
+  color: #856404;
+  text-align: center;
+}
 
 form { background: white; }
 
@@ -514,10 +528,28 @@ button[type="submit"] {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 button[type="submit"]:hover:not(:disabled) { background: #1e4520; }
 button[type="submit"]:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 .message {
   margin: 12px 0 0;
