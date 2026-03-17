@@ -1,8 +1,7 @@
 <script setup>
-import axios from 'axios'
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { BASE_URL } from '@/config'
+import { api } from '@/config'
 
 const router = useRouter()
 
@@ -21,7 +20,7 @@ const handleSubmit = async () => {
   submitMessage.value = ''
   submitSuccess.value = false
   try {
-    const response = await axios.post(`${BASE_URL}/admin_login`, { ...form })
+    const response = await api.post('/admin_login', { ...form })
     const { access_token, token_type } = response.data
 
     // Store token in localStorage for subsequent authenticated requests

@@ -1,7 +1,6 @@
 <script setup>
-import axios from 'axios'
 import { reactive, ref, watch } from 'vue'
-import { BASE_URL } from '@/config'
+import { api } from '@/config'
 
 const form = reactive({
   member_id: '',
@@ -40,7 +39,7 @@ const handleSubmit = async () => {
   submitMessage.value = ''
   submitSuccess.value = false
   try {
-    const response = await axios.post(`${BASE_URL}/admin_signup`, { ...form })
+    const response = await api.post('/admin_signup', { ...form })
     submitSuccess.value = true
     submitMessage.value = `Admin registered successfully!`
   } catch (error) {

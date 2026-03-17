@@ -1,7 +1,6 @@
 <script setup>
-import axios from 'axios'
 import { reactive, ref, watch } from 'vue'
-import { BASE_URL } from '@/config'
+import { api } from '@/config'
 
 const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
 const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
@@ -113,7 +112,7 @@ const handleSubmit = async () => {
   submitMessage.value = ''
   submitSuccess.value = false
   try {
-    const response = await axios.post(`${BASE_URL}/onboard`, {
+    const response = await api.post('/onboard', {
       ...form,
       age: Number(form.age),
     })

@@ -1,8 +1,7 @@
 <script setup>
-import axios from 'axios'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { BASE_URL } from '@/config'
+import { api } from '@/config'
 
 const router = useRouter()
 
@@ -37,7 +36,7 @@ const sidebarOpen    = ref(false)
 // ── Fetch admin info ─────────────────────────────────────────
 const fetchAdminInfo = async () => {
   try {
-    const { data } = await axios.get(`${BASE_URL}/admin/dashboard`, { headers: authHeaders })
+    const { data } = await api.get('/admin/dashboard', { headers: authHeaders })
     adminInfo.value = data
   } catch (e) {
     if (e?.response?.status === 401) {
@@ -52,7 +51,7 @@ const fetchMembers = async () => {
   loading.value = true
   fetchError.value = ''
   try {
-    const { data } = await axios.get(`${BASE_URL}/members`, { headers: authHeaders })
+    const { data } = await api.get('/members', { headers: authHeaders })
     members.value = data
   } catch (e) {
     if (e?.response?.status === 401) {
