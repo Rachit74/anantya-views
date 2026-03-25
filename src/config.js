@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const BASE_URL = 'https://caf3-2401-4900-81fc-999a-908b-1499-e9d4-2496.ngrok-free.app'
+export const BASE_URL = 'https://102d-2401-4900-1c30-1cf2-493b-a63b-cbd4-32f9.ngrok-free.app'
 
 // Axios instance with ngrok header to skip browser warning
 export const api = axios.create({
