@@ -167,6 +167,10 @@ const handleSubmit = async () => {
         </div>
       </div>
 
+      <div class="info-banner">
+        You may experience some latency. Please be patient. Thank you!
+      </div>
+
       <form @submit.prevent="handleSubmit">
 
         <div class="section">
@@ -393,6 +397,15 @@ main {
 
 .card-header h1 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
 .card-header p { margin: 0; font-size: 13px; opacity: 0.75; }
+
+.info-banner {
+  background: #e3f2fd;
+  border-bottom: 1px solid #90caf9;
+  padding: 10px 32px;
+  font-size: 13px;
+  color: #1565c0;
+  text-align: center;
+}
 
 form { background: white; }
 
