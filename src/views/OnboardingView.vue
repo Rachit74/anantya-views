@@ -113,7 +113,7 @@ const handleSubmit = async () => {
   submitMessage.value = ''
   submitSuccess.value = false
   try {
-    const response = await api.post('/onboard', {
+    await api.post('/onboard', {
       ...form,
       age: Number(form.age),
     })

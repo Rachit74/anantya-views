@@ -32,6 +32,9 @@ const pageSize       = ref(10)
 const selectedMember = ref(null)
 const adminInfo      = ref(null)
 const sidebarOpen    = ref(false)
+const deleteConfirm  = ref(false)
+const deleting       = ref(false)
+const deleteError    = ref('')
 
 // ── Fetch admin info ─────────────────────────────────────────
 const fetchAdminInfo = async () => {
@@ -180,6 +183,23 @@ const resetFilters = () => {
 const initials = (name) => {
   if (!name) return '?'
   return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
+}
+
+// ── Delete member ─────────────────────────────────────────────
+const deleteMember = async () => {
+  if (!selectedMember.value) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await api.delete(`/delete/member/${selectedMember.value.uuid}`, { headers: authHeaders })
+    members.value = members.value.filter(m => m.uuid !== selectedMember.value.uuid)
+    selectedMember.value = null
+    deleteConfirm.value = false
+  } catch (e) {
+    deleteError.value = e?.response?.data?.detail || e.message || 'Failed to delete member'
+  } finally {
+    deleting.value = false
+  }
 }
 </script>
 
@@ -471,6 +491,36 @@ const initials = (name) => {
           <a :href="selectedMember.government_id_picture" target="_blank" class="doc-link">
             🪪 View Government ID
           </a>
+        </div>
+
+        <div class="drawer-section danger-zone">
+          <button
+            v-if="!deleteConfirm"
+            class="delete-btn"
+            @click="deleteConfirm = true"
+          >
+            Delete Member
+          </button>
+          <template v-else>
+            <p class="delete-warning">Are you sure? This action cannot be undone.</p>
+            <div class="delete-actions">
+              <button
+                class="delete-confirm"
+                :disabled="deleting"
+                @click="deleteMember"
+              >
+                {{ deleting ? 'Deleting...' : 'Yes, Delete' }}
+              </button>
+              <button
+                class="delete-cancel"
+                :disabled="deleting"
+                @click="deleteConfirm = false; deleteError = ''"
+              >
+                Cancel
+              </button>
+            </div>
+            <p v-if="deleteError" class="delete-error">{{ deleteError }}</p>
+          </template>
         </div>
       </aside>
     </div>
@@ -1115,6 +1165,91 @@ td {
   font-size: 13px;
   color: #333;
   text-align: right;
+}
+
+/* Danger zone */
+.danger-zone {
+  margin-top: 8px;
+  padding-top: 20px;
+}
+
+.delete-btn {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #c0392b;
+  border-radius: 4px;
+  background: transparent;
+  color: #c0392b;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  background: #fdf1ef;
+}
+
+.delete-warning {
+  font-size: 13px;
+  color: #c0392b;
+  margin-bottom: 12px;
+}
+
+.delete-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.delete-confirm {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  background: #c0392b;
+  color: white;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.delete-confirm:hover:not(:disabled) {
+  background: #a8281b;
+}
+
+.delete-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete-cancel {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  background: white;
+  color: #666;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.delete-cancel:hover:not(:disabled) {
+  border-color: #888;
+  color: #333;
+}
+
+.delete-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.delete-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #c0392b;
+  background: #fdf1ef;
+  padding: 8px 10px;
+  border-radius: 4px;
 }
 
 .doc-link {
