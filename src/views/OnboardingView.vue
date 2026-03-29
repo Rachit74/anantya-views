@@ -118,29 +118,6 @@ const handleSubmit = async () => {
       age: Number(form.age),
     })
 
-    // Debug: log the backend response
-    console.log('Backend response:', response.data)
-
-    // Send confirmation email with member_id from backend response
-    // Use fullname from response if available, otherwise from form
-    const member_id = response.data.member_id
-    const fullname = response.data.fullname || form.fullname
-
-    if (!member_id) {
-      console.error('No member_id in response:', response.data)
-    }
-
-    try {
-      await axios.post('/api/send-email', {
-        email: form.email,
-        fullname: fullname,
-        member_id: member_id,
-      })
-    } catch (emailError) {
-      console.error('Failed to send confirmation email:', emailError)
-      // Don't fail the whole submission if email fails
-    }
-
     submitSuccess.value = true
     submitMessage.value = 'Submitted successfully. Welcome to Anantya Foundation!'
   } catch (error) {
