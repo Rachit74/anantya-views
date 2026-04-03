@@ -2,6 +2,13 @@ import axios from 'axios'
 
 export const BASE_URL = 'https://b5c9-2401-4900-1c30-1cf2-db1-e8cb-32e9-5b12.ngrok-free.app'
 
+// Maintenance mode configuration
+// Set to true to show maintenance page to all users
+export const MAINTENANCE_MODE = false
+
+// Routes that are accessible during maintenance mode
+export const MAINTENANCE_EXEMPT_ROUTES = ['/maintenance']
+
 // Axios instance with ngrok header to skip browser warning
 export const api = axios.create({
   baseURL: BASE_URL,
