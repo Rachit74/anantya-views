@@ -19,7 +19,7 @@ const form = reactive({
   department: '',
   volunteered_before: '',
   acknowledgement: false,
-  can_attend_events: false,
+  commitment: '',
   government_id_picture: '',
   member_picture: '',
 })
@@ -235,7 +235,7 @@ const handleSubmit = async () => {
         </div>
 
         <div class="section">
-          <h2>Background &amp; Commitment</h2>
+          <h2>Background</h2>
 
           <div class="field">
             <label>Volunteered before? *</label>
@@ -244,12 +244,16 @@ const handleSubmit = async () => {
               <label class="radio"><input type="radio" v-model="form.volunteered_before" value="No" /> No</label>
             </div>
           </div>
+        </div>
 
+        <div class="section">
+          <h2>Commitment *</h2>
           <div class="field">
-            <label class="checkbox">
-              <input type="checkbox" v-model="form.can_attend_events" />
-              I can attend in-person events
-            </label>
+            <div class="radio-group vertical">
+              <label class="radio"><input type="radio" v-model="form.commitment" value="Offline" required /> I can attend in-person events</label>
+              <label class="radio"><input type="radio" v-model="form.commitment" value="Online" /> Online work only</label>
+              <label class="radio"><input type="radio" v-model="form.commitment" value="Both" /> Both</label>
+            </div>
           </div>
         </div>
 
@@ -462,6 +466,7 @@ input:focus, select:focus {
 .chip.active { background: #2c5f2e; border-color: #2c5f2e; color: white; }
 
 .radio-group { display: flex; gap: 20px; }
+.radio-group.vertical { flex-direction: column; gap: 12px; }
 .radio { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
 .radio input { accent-color: #2c5f2e; }
 

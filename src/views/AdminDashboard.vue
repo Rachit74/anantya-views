@@ -106,7 +106,7 @@ const allDepartments = computed(() => {
 const stats = computed(() => ({
   total:      members.value.length,
   admins:     members.value.filter(m => m.is_admin).length,
-  canAttend:  members.value.filter(m => m.can_attend_events).length,
+  offline:    members.value.filter(m => m.commitment === 'Offline').length,
   experienced: members.value.filter(m => m.volunteered_before === 'Yes').length,
 }))
 
@@ -278,8 +278,8 @@ const deleteMember = async () => {
           <span class="stat-label">Admins</span>
         </div>
         <div class="stat-item">
-          <span class="stat-num">{{ stats.canAttend }}</span>
-          <span class="stat-label">Can Attend</span>
+          <span class="stat-num">{{ stats.offline }}</span>
+          <span class="stat-label">Offline</span>
         </div>
         <div class="stat-item">
           <span class="stat-num">{{ stats.experienced }}</span>
@@ -346,7 +346,7 @@ const deleteMember = async () => {
                 <th>Departments</th>
                 <th class="sortable" @click="setSort('gender')">Gender {{ sortIcon('gender') }}</th>
                 <th>Role</th>
-                <th>Events</th>
+                <th>Commitment</th>
                 <th></th>
               </tr>
             </thead>
@@ -390,9 +390,7 @@ const deleteMember = async () => {
                   </span>
                 </td>
                 <td>
-                  <span class="badge" :class="{ yes: member.can_attend_events }">
-                    {{ member.can_attend_events ? 'Yes' : 'No' }}
-                  </span>
+                  <span class="badge">{{ member.commitment || '—' }}</span>
                 </td>
                 <td>
                   <button class="view-btn" @click.stop="selectedMember = member">View</button>
@@ -447,8 +445,8 @@ const deleteMember = async () => {
           <span class="badge" :class="{ admin: selectedMember.is_admin }">
             {{ selectedMember.is_admin ? 'Admin' : 'Member' }}
           </span>
-          <span class="badge" :class="{ yes: selectedMember.can_attend_events }">
-            {{ selectedMember.can_attend_events ? 'Attends Events' : 'Remote Only' }}
+          <span class="badge" :class="{ yes: selectedMember.commitment === 'Offline' || selectedMember.commitment === 'Both' }">
+            {{ selectedMember.commitment || '—' }}
           </span>
           <span class="badge" :class="{ yes: selectedMember.volunteered_before === 'Yes' }">
             {{ selectedMember.volunteered_before === 'Yes' ? 'Experienced' : 'First-time' }}
