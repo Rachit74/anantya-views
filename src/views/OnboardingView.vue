@@ -16,7 +16,7 @@ const form = reactive({
   phone_number: '',
   profession: '',
   place_of_profession: '',
-  department: [],
+  department: '',
   volunteered_before: '',
   acknowledgement: false,
   can_attend_events: false,
@@ -49,10 +49,8 @@ const isSubmitting = ref(false)
 const submitMessage = ref('')
 const submitSuccess = ref(false)
 
-const toggleDepartment = (dept) => {
-  const idx = form.department.indexOf(dept)
-  if (idx === -1) form.department.push(dept)
-  else form.department.splice(idx, 1)
+const selectDepartment = (dept) => {
+  form.department = form.department === dept ? '' : dept
 }
 
 watch(() => form.dob, (dob) => {
@@ -116,6 +114,7 @@ const handleSubmit = async () => {
     await api.post('/onboard', {
       ...form,
       age: Number(form.age),
+      department: form.department ? [form.department] : [],
     })
 
     submitSuccess.value = true
@@ -222,15 +221,15 @@ const handleSubmit = async () => {
 
         <div class="section">
           <h2>Department Preference *</h2>
-          <p class="hint">Select all that apply.</p>
+          <p class="hint">Select one.</p>
           <div class="chips">
             <button
               v-for="dept in departmentOptions"
               :key="dept"
               type="button"
               class="chip"
-              :class="{ active: form.department.includes(dept) }"
-              @click="toggleDepartment(dept)"
+              :class="{ active: form.department === dept }"
+              @click="selectDepartment(dept)"
             >{{ dept }}</button>
           </div>
         </div>
@@ -309,7 +308,7 @@ const handleSubmit = async () => {
         </div>
 
         <div class="submit-area">
-          <button type="submit" :disabled="isSubmitting || form.department.length === 0 || !!ageError">
+          <button type="submit" :disabled="isSubmitting || !form.department || !!ageError">
             <span v-if="isSubmitting" class="spinner"></span>
             {{ isSubmitting ? 'Submitting...' : 'Submit Application' }}
           </button>
