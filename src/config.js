@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const BASE_URL = 'https://dc1a-2401-4900-1c30-1cf2-ed76-bf96-b6b2-7269.ngrok-free.app'
+export const BASE_URL = 'https://0c07-2401-4900-1c30-1cf2-6499-9bcd-5cc5-6146.ngrok-free.app'
 
 // Maintenance mode configuration
 // Set to true to show maintenance page to all users
