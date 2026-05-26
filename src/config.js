@@ -4,7 +4,7 @@ export const BASE_URL = 'https://0c07-2401-4900-1c30-1cf2-6499-9bcd-5cc5-6146.ng
 
 // Maintenance mode configuration
 // Set to true to show maintenance page to all users
-export const MAINTENANCE_MODE = false
+export const MAINTENANCE_MODE = true
 
 // Routes that are accessible during maintenance mode
 export const MAINTENANCE_EXEMPT_ROUTES = ['/maintenance']
